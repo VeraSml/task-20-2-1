@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -44,8 +45,8 @@ func NewRingIntBuffer(size int) *RingIntBuffer {
 // При попытке добавления нового элемента в заполненный буфер
 // самое старое значение затирается
 func (r *RingIntBuffer) Push(el int) {
-	fmt.Print("Кладем в буффер: ")
-	fmt.Println(el)
+	log.Println("Кладем в буффер: ")
+	log.Println(el)
 
 	r.m.Lock()
 	defer r.m.Unlock()
@@ -64,6 +65,8 @@ func (r *RingIntBuffer) Push(el int) {
 
 // Get - получение всех элементов буфера и его последующая очистка
 func (r *RingIntBuffer) Get() []int {
+	log.Println("Получаем из буффера: ")
+	log.Println(r.pos)
 	if r.pos < 0 {
 		return nil
 	}
@@ -98,6 +101,7 @@ func NewPipelineInt(done <-chan bool, stages ...StageInt) *PipeLineInt {
 // Run - Запуск пайплайна обработки целых чисел
 // source - источник данных для конвейера
 func (p *PipeLineInt) Run(source <-chan int) <-chan int {
+
 	var c <-chan int = source
 	for index := range p.stages {
 		c = p.runStageInt(p.stages[index], c)
@@ -112,10 +116,12 @@ func (p *PipeLineInt) runStageInt(stage StageInt, sourceChan <-chan int) <-chan 
 
 func readDataFromConsole(c chan<- int, done chan<- bool) {
 	go func() {
+		fmt.Println("Введите данные: ")
 		defer close(done)
 		scanner := bufio.NewScanner(os.Stdin)
 		var data string
 		for {
+
 			scanner.Scan()
 			data = scanner.Text()
 			if strings.EqualFold(data, "exit") {
@@ -140,8 +146,8 @@ func main() {
 			for {
 				select {
 				case data := <-c:
-					fmt.Print("Вход первого фильтра пайплайна: ")
-					fmt.Println(data)
+					log.Println("Вход первого фильтра пайплайна: ")
+					log.Println(data)
 
 					if data > 0 {
 						select {
@@ -164,8 +170,8 @@ func main() {
 			for {
 				select {
 				case data := <-c:
-					fmt.Print("Вход второго фильтра пайплайна: ")
-					fmt.Println(data)
+					log.Println("Вход второго фильтра пайплайна: ")
+					log.Println(data)
 
 					if data != 0 && data%3 == 0 {
 						select {
@@ -183,6 +189,7 @@ func main() {
 	}
 	// стадия буферизации
 	bufferStageInt := func(done <-chan bool, c <-chan int) <-chan int {
+		log.Print("Буферизация")
 		bufferedIntChan := make(chan int)
 		buffer := NewRingIntBuffer(bufferSize)
 		go func() {
